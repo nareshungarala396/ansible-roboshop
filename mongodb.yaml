@@ -2,24 +2,24 @@
   host: mongodb
   become: yes 
   tasks:
-  ansible.builtin.copy:
-  - name: copying mongo.repo
-    src: mongo.repo
-    dest: /etc/yum.repos.d/mongo.repo
+   ansible.builtin.copy:
+   - name: copying mongo.repo
+     src: mongo.repo
+     dest: /etc/yum.repos.d/mongo.repo
 
-  - name: Install a package using the generic package module
-    ansible.builtin.package:
+   - name: Install a package using the generic package module
+     ansible.builtin.package:
       name: mongodb-org
       state: present
 
-  - name: allow remote connections
-    ansible.builtin.replace:
+   - name: allow remote connections
+     ansible.builtin.replace:
       path: /etc/mongod.conf
       regexp: '127.0.0.1'
       replace: '0.0.0.0'
 
-  - name: Ensure a service is started
-    ansible.builtin.service:
+   - name: Ensure a service is started
+     ansible.builtin.service:
       name: mongod  # Replace with the actual service name
       state: started
       enabled: yes # To ensure the service starts on boot
