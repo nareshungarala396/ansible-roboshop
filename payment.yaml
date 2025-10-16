@@ -1,0 +1,70 @@
+- name: payment install and configuration
+  hosts: payment
+  become: yes
+  tasks:
+    - name: install python and its packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop:
+      - python3 
+      - gcc 
+      - python3-devel
+    - name: Create non-root user for payment module
+      ansible.builtin.user:
+        name: roboshop
+        comment: roboshop system user
+        system: true
+        shell: /sbin/nologin
+        home: /app
+
+    # Safe to remove directory, because 2nd time if we run it will download freshly. no error if does not exist
+
+    - name: Remove a file
+      ansible.builtin.file:
+        path: /app
+        state: absent
+    
+    
+    - name: create directory
+      ansible.builtin.file:
+        state: directory
+        path: /app
+
+    - name: Remove payment file
+      ansible.builtin.file:
+        path: /tmp/payment.zip
+        state: absent
+
+    - name: Download a specific file on Windows
+      ansible.builtin.get_url:
+        url: "https://roboshop-artifacts.s3.amazonaws.com/payment-v3.zip"
+        dest: "/tmp/payment.zip"
+
+    #remote_src: yes: This is crucial as it tells Ansible that the src file is already present on the remote target host, not on the Ansible control machine.
+
+    - name: Unzip the downloaded archive, extract payment application
+      ansible.builtin.unarchive:
+        src: "/tmp/payment.zip"
+        dest: /app
+        remote_src: yes
+
+    - name: Install bottle python package
+      ansible.builtin.pip:
+        requirements: requirements.txt
+        executable: pip3.9
+      chdir:
+        /app
+
+    - name: Payment Service
+
+      ansible.builtin.copy:
+        name: copy service conf file
+        src: payment.service
+        dest: /etc/systemd/system/payment.service
+    - name: Daemon reload , enable , start
+      ansible.builtin.systemd_service:
+        name: payment 
+        enabled: true
+        state: started
+        daemon_reload: true
